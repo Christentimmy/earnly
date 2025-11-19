@@ -1,11 +1,10 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user.model";
 import bcryptjs from "bcryptjs";
-import {generateToken, decodeToken} from "../utils/token";
+import { generateToken, decodeToken } from "../utils/token";
 import { sendEmail } from "../services/email_service";
 import { redisController } from "./redis.controller";
 import token_blacklist_model from "../models/token_blacklist_model";
-
 
 export const authController = {
   register: async (req: Request, res: Response) => {
@@ -170,6 +169,69 @@ export const authController = {
     } catch (error) {
       console.error("❌ Error in logout:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  },
+
+  changePassword: async (req: Request, res: Response) => {
+    try {
+      const userId = res.locals.userId;
+      const { oldPassword, newPassword } = req.body;
+
+      if (!oldPassword || !newPassword) {
+        res.status(400).json({ 
+            message: "Old password and new password are required" 
+        });
+        return;
+      }
+      const user = await UserModel.findById(userId).select("+password");
+      if (!user) {
+        res.status(400).json({ message: "User not found" });
+        return;
+      }
+      const isPasswordValid = await bcryptjs.compare(
+        oldPassword,
+        user.password
+      );
+      if (!isPasswordValid) {
+        res.status(400).json({ message: "Invalid password" });
+        return;
+      }
+
+      const salt = await bcryptjs.genSalt(10);
+      const hashedPassword = await bcryptjs.hash(newPassword, salt);
+
+      user.password = hashedPassword;
+      await user.save();
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  resetPassword: async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        res.status(400).json({ message: "Email and password are required" });
+        return;
+      }
+
+      const user = await UserModel.findOne({ email });
+      if (!user) {
+        res.status(400).json({ message: "User not found" });
+        return;
+      }
+
+      const salt = await bcryptjs.genSalt(10);
+      const hashedPassword = await bcryptjs.hash(password, salt);
+      
+      user.password = hashedPassword;
+      await user.save();
+      res.status(200).json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Internal server error" });
     }
   },
 };
