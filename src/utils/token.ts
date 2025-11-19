@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { IUser } from '../types/user.type';
 import config from '../config/config';
 
@@ -16,5 +16,9 @@ function generateToken(user: IUser) {
     return token;
 }
 
-export default generateToken;
+function decodeToken(token: string) {
+    return jwt.verify(token, token_secret) as JwtPayload;
+}
+
+export { generateToken, decodeToken };
 

@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user.model";
 import bcryptjs from "bcryptjs";
-import generateToken from "../utils/token_generator";
+import {generateToken, decodeToken} from "../utils/token";
 import { sendEmail } from "../services/email_service";
-import { redisController } from "./redis_controller";
+import { redisController } from "./redis.controller";
+import token_blacklist_model from "../models/token_blacklist_model";
+
 
 export const authController = {
   register: async (req: Request, res: Response) => {
@@ -143,6 +145,31 @@ export const authController = {
     } catch (error) {
       console.log(error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  logoutUser: async (req: Request, res: Response) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+
+      const decoded = decodeToken(token);
+
+      // Optional: ensure token belongs to a valid user
+      const user = await UserModel.findById(decoded.id);
+      if (!user) {
+        res.status(401).json({ message: "Invalid token" });
+        return;
+      }
+
+      await token_blacklist_model.create({ token, userId: user._id });
+
+      res.status(200).json({ message: "Logout successful" });
+    } catch (error) {
+      console.error("❌ Error in logout:", error);
+      res.status(500).json({ message: "Server error" });
     }
   },
 };
