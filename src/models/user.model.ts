@@ -15,6 +15,20 @@ const UserSchema = new Schema<IUser>({
         type: String,
         required: true,
     },
+    role: {
+        type: String,
+        enum: ["user", "admin"],
+        default: "user",
+    },
+    status: {
+        type: String,
+        enum: ["active", "blocked", "banned"],
+        default: "active",
+    },
+    isEmailVerified: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 const UserModel = mongoose.model<IUser>("User", UserSchema);

@@ -1,8 +1,6 @@
 import { createClient } from "redis";
 import config from "../config/config";
 
-console.log(config);
-
 const redisClient = createClient({
   username: config.redis.username,
   password: config.redis.password,
