@@ -8,6 +8,7 @@ export interface IUser extends Document {
     role: "user" | "admin";
     status: "active" | "blocked" | "banned";
     isEmailVerified: boolean;
+    credits: number;
     password: string;
     createdAt: Date;
     updatedAt: Date;
